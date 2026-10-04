@@ -1,0 +1,75 @@
+from fastapi import FastAPI, File, UploadFile, Form
+from fastapi.responses import JSONResponse
+from pathlib import Path
+from typing import Optional
+
+from farm_ai_robot.config import settings
+from farm_ai_robot.vision.yolo_detector import YOLODetector
+from farm_ai_robot.models.multimodal_agent import MultimodalFarmAssistant
+from farm_ai_robot.core.flood_analyzer import FloodRiskAnalyzer
+
+app = FastAPI(title=settings.app_name, version="0.1.0")
+
+upload_dir = Path(settings.upload_dir)
+upload_dir.mkdir(exist_ok=True)
+
+detector = YOLODetector(settings.yolo_model)
+assistant = MultimodalFarmAssistant(settings.llm_model)
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "service": settings.app_name}
+
+
+@app.post("/analyze")
+async def analyze_image(
+    image: UploadFile = File(...),
+    prompt: str = Form("Check this orchard image for flood risk and safety concerns."),
+    water_depth_cm: Optional[float] = Form(None),
+):
+    if not image.filename:
+        return JSONResponse(status_code=400, content={"detail": "No image provided."})
+
+    ext = Path(image.filename).suffix.lower()
+    if ext not in settings.allowed_extensions:
+        return JSONResponse(status_code=400, content={"detail": "Unsupported image file type."})
+
+    file_path = upload_dir / image.filename
+    with file_path.open("wb") as f:
+        f.write(await image.read())
+
+    try:
+        detections = detector.detect(str(file_path))
+    except RuntimeError as exc:
+        return JSONResponse(status_code=500, content={"detail": str(exc)})
+
+    flood_analyzer = FloodRiskAnalyzer(water_depth_cm=water_depth_cm)
+    flood_result = flood_analyzer.assess(detections)
+    assistant_result = assistant.analyze(prompt, detections, str(file_path))
+
+    return {
+        "detections": detections,
+        "flood_risk": {
+            "risk_level": flood_result.risk_level,
+            "notes": flood_result.notes,
+            "action_recommendations": flood_result.action_recommendations,
+        },
+        "assistant_response": assistant_result,
+    }
+
+
+@app.post("/chat")
+async def chat(prompt: str = Form("How is the orchard doing today?")):
+    return {
+        "response": {
+            "role": "assistant",
+            "content": f"Farm AI robot received your prompt: '{prompt}'. In a production setup, this would trigger visual inspection, sensor checks, and field action planning.",
+        }
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host=settings.host, port=settings.port)

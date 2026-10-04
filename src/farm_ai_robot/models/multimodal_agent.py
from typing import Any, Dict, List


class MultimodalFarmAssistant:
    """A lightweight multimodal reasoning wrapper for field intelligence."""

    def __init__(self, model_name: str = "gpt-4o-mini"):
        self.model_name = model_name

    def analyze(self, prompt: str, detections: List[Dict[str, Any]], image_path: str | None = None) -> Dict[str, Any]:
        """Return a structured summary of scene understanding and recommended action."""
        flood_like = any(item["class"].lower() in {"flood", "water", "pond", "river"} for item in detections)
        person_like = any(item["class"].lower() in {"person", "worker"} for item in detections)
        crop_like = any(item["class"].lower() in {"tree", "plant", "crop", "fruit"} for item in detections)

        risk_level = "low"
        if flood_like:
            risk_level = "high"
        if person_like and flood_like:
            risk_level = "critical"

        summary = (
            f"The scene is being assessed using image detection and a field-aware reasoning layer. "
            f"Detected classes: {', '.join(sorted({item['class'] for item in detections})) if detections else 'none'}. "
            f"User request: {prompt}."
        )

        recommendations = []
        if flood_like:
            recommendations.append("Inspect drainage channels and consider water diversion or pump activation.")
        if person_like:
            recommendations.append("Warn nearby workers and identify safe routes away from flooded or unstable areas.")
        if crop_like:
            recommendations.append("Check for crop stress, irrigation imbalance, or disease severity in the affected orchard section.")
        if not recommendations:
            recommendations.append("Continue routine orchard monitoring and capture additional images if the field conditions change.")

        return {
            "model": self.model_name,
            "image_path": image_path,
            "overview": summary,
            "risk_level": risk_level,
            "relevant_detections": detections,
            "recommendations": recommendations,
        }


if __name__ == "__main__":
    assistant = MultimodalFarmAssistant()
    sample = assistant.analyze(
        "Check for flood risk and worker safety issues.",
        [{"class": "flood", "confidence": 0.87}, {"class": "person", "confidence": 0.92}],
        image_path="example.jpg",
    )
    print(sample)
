@@ -1,0 +1,55 @@
+from typing import Any, Dict, List
+
+
+class MultimodalFarmAssistant:
+    """A lightweight multimodal reasoning wrapper for field intelligence."""
+
+    def __init__(self, model_name: str = "gpt-4o-mini"):
+        self.model_name = model_name
+
+    def analyze(self, prompt: str, detections: List[Dict[str, Any]], image_path: str | None = None) -> Dict[str, Any]:
+        """Return a structured summary of scene understanding and recommended action."""
+        flood_like = any(item["class"].lower() in {"flood", "water", "pond", "river"} for item in detections)
+        person_like = any(item["class"].lower() in {"person", "worker"} for item in detections)
+        crop_like = any(item["class"].lower() in {"tree", "plant", "crop", "fruit"} for item in detections)
+
+        risk_level = "low"
+        if flood_like:
+            risk_level = "high"
+        elif person_like and flood_like:
+            risk_level = "critical"
+
+        summary = (
+            f"The scene is being assessed using image detection and a field-aware reasoning layer. "
+            f"Detected classes: {', '.join(sorted({item['class'] for item in detections})) if detections else 'none'}. "
+            f"User request: {prompt}."
+        )
+
+        recommendations = []
+        if flood_like:
+            recommendations.append("Inspect drainage channels and consider water diversion or pump activation.")
+        if person_like:
+            recommendations.append("Warn nearby workers and identify safe routes away from flooded or unstable areas.")
+        if crop_like:
+            recommendations.append("Check for crop stress, irrigation imbalance, or disease severity in the affected orchard section.")
+        if not recommendations:
+            recommendations.append("Continue routine orchard monitoring and capture additional images if the field conditions change.")
+
+        return {
+            "model": self.model_name,
+            "image_path": image_path,
+            "overview": summary,
+            "risk_level": risk_level,
+            "relevant_detections": detections,
+            "recommendations": recommendations,
+        }
+
+
+if __name__ == "__main__":
+    assistant = MultimodalFarmAssistant()
+    sample = assistant.analyze(
+        "Check for flood risk and worker safety issues.",
+        [{"class": "flood", "confidence": 0.87}, {"class": "person", "confidence": 0.92}],
+        image_path="example.jpg",
+    )
+    print(sample)

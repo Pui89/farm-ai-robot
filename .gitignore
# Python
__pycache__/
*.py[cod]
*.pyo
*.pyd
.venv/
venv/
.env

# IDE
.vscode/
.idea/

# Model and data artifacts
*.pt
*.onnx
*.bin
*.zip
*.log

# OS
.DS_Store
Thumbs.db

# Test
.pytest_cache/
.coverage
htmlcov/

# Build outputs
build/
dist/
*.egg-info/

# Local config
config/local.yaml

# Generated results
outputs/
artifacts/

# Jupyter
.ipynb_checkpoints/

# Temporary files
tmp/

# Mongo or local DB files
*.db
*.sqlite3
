@@ -1,0 +1,81 @@
+# Farm AI Robot
+
+AI-powered robot for farm and orchard monitoring with a human-friendly multimodal interface, flood assistance, plant health assessment, and autonomous decision support.
+
+This repository provides a starter architecture and working scaffold for a farm/orchard robot using:
+- YOLO-based vision detection
+- multimodal image interpretation
+- LLM-based human interaction
+- action planner for flood and field assistance
+- ROS2-ready robotics backend design
+
+## What this project includes
+- Vision detection pipeline using YOLO
+- Flood-risk analysis using image and sensor metadata
+- Multimodal assistant interface for human prompts
+- FastAPI backend for interactive farm monitoring
+- Architecture blueprint for real orchard deployment
+
+## Core use cases
+- Flood awareness and early warning
+- Orchard row inspection
+- Worker safety monitoring
+- Irrigation and drainage recommendations
+- Human conversation via voice/text
+- Visual scene understanding from image + sensor context
+
+## Suggested best-version stack
+- Vision: YOLOv8 / YOLO11
+- Multimodal model: Qwen-VL, LLaVA, GPT-4o vision, or similar
+- LLM: Llama 3, Mistral, Qwen, GPT-4o
+- Robot runtime: ROS2
+- Edge compute: NVIDIA Jetson Orin / Xavier
+- Backend: Python + FastAPI
+- Database: PostgreSQL + time-series storage
+
+## Repository structure
+- `src/farm_ai_robot/` - main Python package
+- `app.py` - FastAPI service entry point
+- `requirements.txt` - project dependencies
+- `docs/ARCHITECTURE.md` - architecture and design notes
+
+## Quick start
+
+1. Create a virtual environment
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   ```
+
+2. Install dependencies
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Run the API server
+   ```bash
+   uvicorn farm_ai_robot.api.app:app --reload --host 0.0.0.0 --port 8000
+   ```
+
+4. Example health check
+   ```bash
+   curl http://localhost:8000/health
+   ```
+
+## Example request
+
+```bash
+curl -X POST "http://localhost:8000/analyze" \
+  -F "image=@examples/orchard_sample.jpg" \
+  -F "prompt=Check for flood risk and worker safety issues in this orchard image."
+```
+
+## Recommended next steps
+- Add real YOLO model weights and tuning for orchard data
+- Connect to cameras, sensors, and drone imagery
+- Add ROS2 navigation and actuator control
+- Add human speech interface with local language support
+- Add a farmer dashboard for alerts and recommendations
+
+## License
+This project is intended as an open starter for agricultural AI research and field experimentation.

@@ -1,0 +1,75 @@
+# Farm AI Robot Architecture
+
+## 1. System goal
+The goal of this project is to create an AI-powered robotic assistant for agricultural tasks such as farm monitoring, orchard care, worker safety, and flood detection.
+
+## 2. Overall architecture
+
+```text
+Camera + sensors + GPS + weather data
+               |
+               v
+   Perception layer (YOLO, segmentation, thermal, depth)
+               |
+               v
+   Multimodal scene understanding (vision-language + LLM)
+               |
+               v
+   Decision engine and action planner
+               |
+               v
+   Human assistant (voice, text, dashboard)
+               |
+               v
+   Robotic control (navigation, irrigation, pumps, alerts)
+```
+
+## 3. Components
+
+### Vision
+- YOLO models for flood water, persons, machinery, and crop objects
+- OpenCV preprocessing for image quality and normalization
+- Optional segmentation model for water boundaries and field zones
+
+### Multimodal reasoning
+- Combine image, prompt, and sensor context
+- Provide a concise field summary and recommended action
+
+### LLM interface
+- Human conversation in simple commands and local language support
+- Query examples:
+  - "Check the west field for flood risk"
+  - "How many workers are near the canal?"
+  - "Which rows need irrigation?"
+
+### Action model
+- Rule-based safety engine for flood and worker danger detection
+- Planned actions: raise alert, notify operator, stop irrigation, activate pump, avoid hazardous routes
+
+## 4. Flood-focused logic
+The robot should monitor:
+- low-lying orchard zones
+- blocked drainage paths
+- standing water depth
+- water intrusion near roots or equipment
+- safe evacuation routes for workers
+
+## 5. Deployment targets
+- Edge runtime: Jetson Orin/Xavier
+- Robot base: 4WD agricultural chassis
+- Communication: Wi-Fi, LTE, or local mesh
+- Safety: emergency stop and human confirmation for critical actions
+
+## 6. Recommended model stack
+- YOLOv8 / YOLO11 for detections
+- Qwen-VL or LLaVA for multimodal image interpretation
+- Llama 3 / Mistral / Qwen / GPT-4o for chat reasoning
+- ROS2 for robot actions and navigation
+
+## 7. Next milestone roadmap
+- Build data collection pipeline for orchard images
+- Annotate flood and crop examples
+- Train detection model on farm data
+- Add sensor fusion for water depth and moisture
+- Connect a dashboard and voice interface
+- Deploy robot to orchard field trials

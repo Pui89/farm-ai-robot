@@ -1,0 +1,64 @@
+from dataclasses import dataclass
+from typing import List, Dict, Any
+
+
+@dataclass
+class FloodAssessment:
+    risk_level: str
+    water_depth_cm: float | None = None
+    notes: str = ""
+    action_recommendations: List[str] | None = None
+
+
+class FloodRiskAnalyzer:
+    """Rule-based layer for flooding and orchard safety detection."""
+
+    def __init__(self, water_depth_cm: float | None = None, soil_moisture: float | None = None):
+        self.water_depth_cm = water_depth_cm
+        self.soil_moisture = soil_moisture
+
+    def assess(self, detections: List[Dict[str, Any]]) -> FloodAssessment:
+        flood_like = any(item["class"].lower() in {"flood", "water", "pond", "river"} for item in detections)
+        person_like = any(item["class"].lower() in {"person", "worker"} for item in detections)
+
+        if flood_like and self.water_depth_cm is not None and self.water_depth_cm > 15:
+            risk_level = "critical"
+            notes = "Standing water is present above the safe threshold for orchard access and equipment movement."
+            actions = [
+                "Alert farm workers to avoid the affected sector.",
+                "Check all drains and irrigation channels.",
+                "Activate drainage control if the field is at risk of crop loss."
+            ]
+        elif flood_like:
+            risk_level = "high"
+            notes = "Flood conditions are present. The area should be inspected promptly."
+            actions = [
+                "Open or unblock drainage routes.",
+                "Monitor orchard low-lying zones."
+            ]
+        elif person_like:
+            risk_level = "medium"
+            notes = "The field is active and workers are present; monitor the area for hazards."
+            actions = [
+                "Ensure safe worker routes.",
+                "Check for unsafe terrain or water pooling."
+            ]
+        else:
+            risk_level = "low"
+            notes = "No immediate flood risk was detected in the current analysis."
+            actions = [
+                "Continue routine monitoring."
+            ]
+
+        return FloodAssessment(
+            risk_level=risk_level,
+            water_depth_cm=self.water_depth_cm,
+            notes=notes,
+            action_recommendations=actions,
+        )
+
+
+if __name__ == "__main__":
+    analyzer = FloodRiskAnalyzer(water_depth_cm=20)
+    result = analyzer.assess([{"class": "flood", "confidence": 0.91}, {"class": "person", "confidence": 0.77}])
+    print(result)

@@ -1,0 +1,23 @@
+from dataclasses import dataclass
+from typing import Optional
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+@dataclass
+class Settings:
+    app_name: str = "farm-ai-robot"
+    debug: bool = os.getenv("DEBUG", "false").lower() == "true"
+    host: str = os.getenv("HOST", "0.0.0.0")
+    port: int = int(os.getenv("PORT", "8000"))
+    openai_api_key: Optional[str] = os.getenv("OPENAI_API_KEY")
+    llm_model: str = os.getenv("LLM_MODEL", "gpt-4o-mini")
+    yolo_model: str = os.getenv("YOLO_MODEL", "yolov8n.pt")
+    upload_dir: str = os.getenv("UPLOAD_DIR", "uploads")
+    allowed_extensions: tuple[str, ...] = (".png", ".jpg", ".jpeg", ".bmp")
+
+
+settings = Settings()
+
