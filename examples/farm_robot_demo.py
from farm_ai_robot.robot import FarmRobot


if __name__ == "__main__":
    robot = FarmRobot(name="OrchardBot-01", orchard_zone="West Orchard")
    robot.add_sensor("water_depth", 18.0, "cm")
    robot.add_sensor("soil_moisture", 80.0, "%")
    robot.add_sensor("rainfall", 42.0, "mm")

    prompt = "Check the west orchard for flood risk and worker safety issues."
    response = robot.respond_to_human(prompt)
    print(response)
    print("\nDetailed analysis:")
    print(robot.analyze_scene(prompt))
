@@ -1,0 +1,127 @@
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
+
+@dataclass
+class SensorReading:
+    sensor_type: str
+    value: float
+    unit: str
+
+
+@dataclass
+class Alert:
+    level: str
+    message: str
+    recommendation: str
+
+
+class FarmRobot:
+    """A lightweight orchard/farm robot prototype that can analyze flood risk and interact with humans."""
+
+    def __init__(
+        self,
+        name: str = "OrchardBot-01",
+        orchard_zone: str = "West Orchard",
+        water_depth_cm: float = 0.0,
+        soil_moisture_pct: float = 0.0,
+        weather_rain_mm: float = 0.0,
+    ):
+        self.name = name
+        self.orchard_zone = orchard_zone
+        self.water_depth_cm = water_depth_cm
+        self.soil_moisture_pct = soil_moisture_pct
+        self.weather_rain_mm = weather_rain_mm
+        self.sensors: List[SensorReading] = []
+        self.status: Dict[str, Any] = {
+            "location": orchard_zone,
+            "flood_risk": "low",
+            "workers_safe": True,
+            "alert_count": 0,
+        }
+
+    def add_sensor(self, sensor_type: str, value: float, unit: str) -> None:
+        self.sensors.append(SensorReading(sensor_type=sensor_type, value=value, unit=unit))
+
+    def update_environment(
+        self,
+        water_depth_cm: Optional[float] = None,
+        soil_moisture_pct: Optional[float] = None,
+        weather_rain_mm: Optional[float] = None,
+    ) -> None:
+        if water_depth_cm is not None:
+            self.water_depth_cm = water_depth_cm
+        if soil_moisture_pct is not None:
+            self.soil_moisture_pct = soil_moisture_pct
+        if weather_rain_mm is not None:
+            self.weather_rain_mm = weather_rain_mm
+
+    def detect_flood_risk(self) -> Alert:
+        if self.water_depth_cm >= 20 or self.soil_moisture_pct >= 85:
+            return Alert(
+                level="critical",
+                message="Standing water is high in the orchard and crop roots may be at risk.",
+                recommendation="Stop irrigation, alert workers, and inspect drainage channels immediately.",
+            )
+        if self.water_depth_cm >= 8 or self.soil_moisture_pct >= 70 or self.weather_rain_mm >= 30:
+            return Alert(
+                level="high",
+                message="Flood risk is elevated in the orchard area.",
+                recommendation="Monitor low-lying rows, unblock drains, and move workers away from wet sections.",
+            )
+        return Alert(
+            level="low",
+            message="No immediate flood threat detected in the current conditions.",
+            recommendation="Continue routine orchard monitoring and inspect after the next weather cycle.",
+        )
+
+    def check_worker_safety(self) -> bool:
+        if self.water_depth_cm >= 12:
+            return False
+        return True
+
+    def analyze_scene(self, prompt: str) -> Dict[str, Any]:
+        alert = self.detect_flood_risk()
+        workers_safe = self.check_worker_safety()
+
+        self.status["flood_risk"] = alert.level
+        self.status["workers_safe"] = workers_safe
+
+        if alert.level in {"high", "critical"}:
+            self.status["alert_count"] += 1
+
+        return {
+            "robot": self.name,
+            "location": self.orchard_zone,
+            "prompt": prompt,
+            "flood_risk": alert.level,
+            "message": alert.message,
+            "recommendation": alert.recommendation,
+            "workers_safe": workers_safe,
+            "sensors": [sensor.__dict__ for sensor in self.sensors],
+        }
+
+    def respond_to_human(self, prompt: str) -> str:
+        result = self.analyze_scene(prompt)
+        if result["flood_risk"] == "critical":
+            return (
+                f"{self.name} says: Critical flood risk in {self.orchard_zone}. "
+                f"{result['recommendation']}"
+            )
+        if result["flood_risk"] == "high":
+            return (
+                f"{self.name} says: High flood risk in {self.orchard_zone}. "
+                f"{result['recommendation']}"
+            )
+        return (
+            f"{self.name} says: Orchard conditions appear stable. "
+            f"{result['recommendation']}"
+        )
+
+
+if __name__ == "__main__":
+    robot = FarmRobot(name="OrchardBot-01", orchard_zone="West Orchard")
+    robot.add_sensor("water_depth", 18.0, "cm")
+    robot.add_sensor("soil_moisture", 78.0, "%")
+    robot.update_environment(water_depth_cm=18.0, soil_moisture_pct=78.0, weather_rain_mm=42.0)
+    print(robot.respond_to_human("Check the west orchard for flood risk."))
